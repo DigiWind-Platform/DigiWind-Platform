@@ -1,0 +1,26 @@
+zeebe:
+  client:
+    broker:
+      gatewayAddress: zeebe:26500
+    security.plaintext: true # used to disable tls for developing
+#  gateway:
+#    network:
+#      host: 127.0.0.1
+#      port: 26500
+mqtt:
+  debugging: false
+  broker:
+    ip: mqttbroker
+    port: 1883
+    qos: 0
+    timeout: 60
+    username: bpmnservice
+    password: bpmnservice_password
+    useUsernamePassword: false
+    useCertificates: false
+  topics:
+    prefix:
+      services: dw/services
+      message: dw/message
+bpmn:
+  key_identifier: correlationKey

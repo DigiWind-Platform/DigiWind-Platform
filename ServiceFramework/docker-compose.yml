@@ -1,0 +1,232 @@
+version: '3.8'
+
+# start with docker-compose up -d --build
+
+networks:
+  twin_network:
+    driver: bridge
+
+volumes:
+  dw_zeebe_data:
+  dw_zeebe_elasticsearch_data:
+  postgresdb_data:
+
+
+services:
+
+  #-------------------------------------------------Zeebe---------------------------------------------------
+  #---------------------------------------------------------------------------------------------------------
+
+  zeebe:
+    image: ghcr.io/camunda-community-hub/zeebe-with-hazelcast-exporter:8.0.5
+    restart: always
+    environment:
+      - ZEEBE_LOG_LEVEL=debug
+    ports:
+      - $ZEEBE_PORT:26500
+      - $ZEEBE_METRICS_PORT:9600
+      - $ZEEBE_MONITOR_PORT:5701
+    depends_on:
+      - elasticsearch
+    volumes:
+      - dw_zeebe_data:/usr/local/zeebe/data
+    networks:
+      - twin_network
+
+  simple-monitor:
+    image: ghcr.io/camunda-community-hub/zeebe-simple-monitor:2.4.0
+    environment:
+      - zeebe.client.broker.gateway-address=zeebe:$ZEEBE_PORT
+      - zeebe.client.worker.hazelcast.connection=zeebe:$ZEEBE_MONITOR_PORT
+    ports:
+      - "$OPERATE_PORT:8082"
+    depends_on:
+      - zeebe
+    networks:
+      - twin_network
+
+  simple-tasklist:
+    image: camunda/zeebe-simple-tasklist:latest
+    environment:
+      - zeebe.client.broker.contactPoint=zeebe:$ZEEBE_PORT
+      - zeebe.client.worker.hazelcast.connection=zeebe:ZEEBE_MONITOR_PORT
+    ports:
+      - $ZEEBE_SIMPLE_TASKLIST_PORT:8081
+    depends_on:
+      - zeebe
+    networks:
+      - twin_network
+
+  elasticsearch:
+    image: elasticsearch:7.17.0
+    restart: always
+    ports:
+      - $ELASTICSEARCH_HTTP_PORT:9200
+    environment:
+      - discovery.type=single-node
+      - cluster.name=elasticsearch
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx2048m"
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - dw_zeebe_elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - twin_network
+
+  #-------------------------------------------------MQTT---------------------------------------------------
+  #--------------------------------------------------------------------------------------------------------
+  mqttbroker:
+    ports:
+      - $MQTT_PORT:1883
+      - $MQTT_WEB_PORT:9001
+    networks:
+      - twin_network
+    restart: always
+    volumes:
+      - ./services/broker/broker_data:/mosquitto/data
+      - ./services/broker/broker_logs:/mosquitto/log
+      - ./services/broker/broker_conf:/mosquitto/config
+    image: eclipse-mosquitto
+    #-------------------------------------------------BPMN-Service-------------------------------------------
+    #--------------------------------------------------------------------------------------------------------
+
+  bpmnservice:
+    networks:
+      - twin_network
+    depends_on:
+      - mqttbroker
+      - zeebe
+    restart: always
+    volumes:
+      - ./services/bpmnservice:/app/resources
+    image: registry.auto.tuwien.ac.at/5dit/bpmn_service/bpmn_service:latest
+    #-----------------------------------------------SMART DATA SERVICE-----------------------------------------------------------------------
+
+  fuseki:
+    image: stain/jena-fuseki:4.0.0
+    ports:
+      - $FUSEKI_PORT:3030
+    environment:
+      - ADMIN_PASSWORD=$SPARQL_PASSWORD
+    volumes:
+      - ./services/fuseki:/fuseki
+    networks:
+      - twin_network
+
+  webvowl:
+    build: ./services/webvowl
+    command: catalina.sh run
+    ports:
+      - $WEBVOWL_PORT:8080
+      # postgres:
+      # image: digiwind/postgres
+      # restart: always
+      # build:
+      # context: ./services/postgres
+      # dockerfile: postgres.Dockerfile
+      # ports:
+      # - $POSTGRES_PORT:5432
+      # networks: 
+      # - twin_network
+      # volumes:
+      # - postgresdb_data:/var/lib/postgresql/data
+      # environment:
+      # POSTGRES_USER: digiwind
+      # POSTGRES_PASSWORD: digiwind_pw
+      # POSTGRES_DB: datatable
+
+      #-------------------------------------------------  Services  -------------------------------------------
+      #--------------------------------------------------------------------------------------------------------
+
+  modelmanagementservice:
+    ports:
+      - $FTP_PORT:2121
+      - $FTP_PASSIVE_PORTS:$FTP_PASSIVE_PORTS
+    networks:
+      - twin_network
+    depends_on:
+      - fuseki
+    environment:
+      - SPARQL_SERVER_NAME=fuseki
+      - SPARQL_SERVER_PORT=$FUSEKI_PORT
+      - SPARQL_DATASET_NAME=ds
+      - SPARQL_USER=$SPARQL_USER
+      - SPARQL_PASSWORD=$SPARQL_PASSWORD
+      - LOGGING_LEVEL=debug
+      - METADATA_FILE_NAME=metadata.json
+      - FTP_PASSIVE_PORT_RANGE=$FTP_PASSIVE_PORTS
+      - FTP_USER=$FTP_USER
+      - FTP_PASSWORD=$FTP_PASSWORD
+      - ONTOLOGY_URL=$ONTOLOGY_URL
+      - ONTOLOGY_FILE_NAME=$ONTOLOGY_FILE_NAME
+    restart: always
+    volumes:
+      - ./services/modelmanagementservice/fmus:/app/data
+      - ./services/modelmanagementservice/logs:/app/logs
+      - ./services/modelmanagementservice/ontology:/app/ontology
+    image: model_management_service
+
+  modelassemblservice:
+    networks:
+      - twin_network
+    depends_on:
+      - mqttbroker
+    environment:
+      - FTP_SERVER=modelmanagementservice
+      - MQTT_TOPIC=dw/services/mas
+      - SPARQL_SERVER_NAME=fuseki
+      - SPARQL_SERVER_PORT=$FUSEKI_PORT
+      - SPARQL_DATASET_NAME=ds
+    restart: always
+    volumes:
+      - ./services/modelassembly/data:/app/data
+    image: model_assembly_service
+
+  cosimulationservice:
+    networks:
+      - twin_network
+    depends_on:
+      - mqttbroker
+    environment:
+      - MQTT_TOPIC=dw/services/cosim
+      - MQTT_TOPIC_DATA=dw/services/dataservice
+      - FTP_SERVER=modelmanagementservice
+      - FTP_PORT=$FTP_PORT
+    restart: always
+    volumes:
+      - ./services/cosimulation/data:/app/data
+    image: co_simulation_service
+
+  measurementdataservice:
+    networks:
+      - twin_network
+    depends_on:
+      - mqttbroker
+    environment:
+      - MQTT_TOPIC=dw/services/dataservice
+      - FTP_SERVER=modelmanagementservice
+      - FTP_PORT=$FTP_PORT
+    restart: always
+    volumes:
+      - ./services/measurementdataservice/data:/app/data
+    image: measurement_data_service
+
+  templateservice:
+    networks:
+      - twin_network
+    depends_on:
+      - mqttbroker
+      - fuseki
+    environment:
+      - MQTT_TOPIC=dw/services/template
+      - SPARQL_SERVER_NAME=fuseki
+      - SPARQL_SERVER_PORT=$FUSEKI_PORT
+      - SPARQL_DATASET_NAME=ds
+    restart: always
+    volumes:
+      - ./services/template/data:/app/data
+      - ./services/template/logs:/app/logs
+    image: template_service

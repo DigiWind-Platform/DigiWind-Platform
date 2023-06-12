@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0528ir6" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.1.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="1.0.0">
+  <bpmn:message id="Message_1lu3hbg" name="operationalplanning">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=correlationKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_1pqjd3t" name="mas">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=correlationKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_0da5tsu" name="remainingUsefulLifetime" />
+  <bpmn:message id="Message_10sy6v9" name="template">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=correlationKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_0muhf7i" name="cosim">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=correlationKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:process id="RemainingUsefulLifetime" isExecutable="true">
+    <bpmn:serviceTask id="Activity_1yp6pub" name="Template Service">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="mqttWorker" />
+        <zeebe:taskHeaders>
+          <zeebe:header key="topic" value="template" />
+          <zeebe:header key="input" value="template" />
+        </zeebe:taskHeaders>
+        <zeebe:ioMapping>
+          <zeebe:input source="= template" target="template" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0it75fm</bpmn:incoming>
+      <bpmn:outgoing>Flow_0e3nayw</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:intermediateCatchEvent id="Event_0bn8q2j" name="Template Service done">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_0e3nayw</bpmn:incoming>
+      <bpmn:outgoing>Flow_0tewo1p</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0923dei" messageRef="Message_10sy6v9" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Event_0sidysk" name="CoSimulation done">
+      <bpmn:incoming>Flow_0ykamgn</bpmn:incoming>
+      <bpmn:outgoing>Flow_0y0ln90</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0r7igw8" messageRef="Message_0muhf7i" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="Activity_16zar9d" name="Model Assembly Service">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="mqttWorker" />
+        <zeebe:taskHeaders>
+          <zeebe:header key="topic" value="mas" />
+          <zeebe:header key="input" value="simulationConfigs" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0tewo1p</bpmn:incoming>
+      <bpmn:outgoing>Flow_0go2ahr</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:intermediateCatchEvent id="Event_0rltzac" name="Model Assembly done">
+      <bpmn:incoming>Flow_0go2ahr</bpmn:incoming>
+      <bpmn:outgoing>Flow_1wdd3b2</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0svv2ss" messageRef="Message_1pqjd3t" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="Activity_0ww2zyu" name="CoSimulation Service">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="mqttWorker" />
+        <zeebe:taskHeaders>
+          <zeebe:header key="topic" value="cosim" />
+          <zeebe:header key="input" value="ssdFile, simulationTime, makroStepSize" />
+        </zeebe:taskHeaders>
+        <zeebe:ioMapping>
+          <zeebe:input source="= simulationConfigs" target="simulationConfigs" />
+          <zeebe:output source="= coSimulationResult" target="coSimulationResult" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1wdd3b2</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ykamgn</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1wdd3b2" sourceRef="Event_0rltzac" targetRef="Activity_0ww2zyu" />
+    <bpmn:sequenceFlow id="Flow_0go2ahr" sourceRef="Activity_16zar9d" targetRef="Event_0rltzac" />
+    <bpmn:sequenceFlow id="Flow_0it75fm" sourceRef="Event_02i5wkq" targetRef="Activity_1yp6pub" />
+    <bpmn:sequenceFlow id="Flow_0y0ln90" sourceRef="Event_0sidysk" targetRef="Event_0wzq56m" />
+    <bpmn:sequenceFlow id="Flow_0e3nayw" sourceRef="Activity_1yp6pub" targetRef="Event_0bn8q2j" />
+    <bpmn:sequenceFlow id="Flow_0ykamgn" sourceRef="Activity_0ww2zyu" targetRef="Event_0sidysk" />
+    <bpmn:sequenceFlow id="Flow_0tewo1p" sourceRef="Event_0bn8q2j" targetRef="Activity_16zar9d" />
+    <bpmn:endEvent id="Event_0wzq56m">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_0y0ln90</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="Event_02i5wkq" name="Start RUL">
+      <bpmn:outgoing>Flow_0it75fm</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_02i9e3d" messageRef="Message_0da5tsu" />
+    </bpmn:startEvent>
+  </bpmn:process>
+  <bpmn:message id="Message_1uv8cat" name="Message_1uv8cat" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="RemainingUsefulLifetime">
+      <bpmndi:BPMNEdge id="Flow_0tewo1p_di" bpmnElement="Flow_0tewo1p">
+        <di:waypoint x="508" y="140" />
+        <di:waypoint x="580" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ykamgn_di" bpmnElement="Flow_0ykamgn">
+        <di:waypoint x="970" y="140" />
+        <di:waypoint x="1072" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0e3nayw_di" bpmnElement="Flow_0e3nayw">
+        <di:waypoint x="390" y="140" />
+        <di:waypoint x="472" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0y0ln90_di" bpmnElement="Flow_0y0ln90">
+        <di:waypoint x="1108" y="140" />
+        <di:waypoint x="1192" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0it75fm_di" bpmnElement="Flow_0it75fm">
+        <di:waypoint x="208" y="140" />
+        <di:waypoint x="290" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0go2ahr_di" bpmnElement="Flow_0go2ahr">
+        <di:waypoint x="680" y="140" />
+        <di:waypoint x="752" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1wdd3b2_di" bpmnElement="Flow_1wdd3b2">
+        <di:waypoint x="788" y="140" />
+        <di:waypoint x="870" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_14gpmka_di" bpmnElement="Activity_1yp6pub">
+        <dc:Bounds x="290" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0wpru6c_di" bpmnElement="Event_0bn8q2j">
+        <dc:Bounds x="472" y="122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="451" y="165" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0n3kun2_di" bpmnElement="Event_0sidysk">
+        <dc:Bounds x="1072" y="122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1058" y="165" width="66" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_05btxmj_di" bpmnElement="Activity_16zar9d">
+        <dc:Bounds x="580" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0o8rir3_di" bpmnElement="Event_0rltzac">
+        <dc:Bounds x="752" y="122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="729" y="165" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1qhlpf5_di" bpmnElement="Activity_0ww2zyu">
+        <dc:Bounds x="870" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0wzq56m_di" bpmnElement="Event_0wzq56m">
+        <dc:Bounds x="1192" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_13pzy42_di" bpmnElement="Event_02i5wkq">
+        <dc:Bounds x="172" y="122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="165" y="165" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

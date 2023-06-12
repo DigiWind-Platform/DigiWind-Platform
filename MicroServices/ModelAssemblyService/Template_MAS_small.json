@@ -1,0 +1,22 @@
+{
+    "models": {
+        "windTurbine": {
+            "model": "windTurbine",
+            "connections": {
+                "aerodynamicPort": {
+                    "con_model": "wind",
+                    "con_port": "aerodynamicPort"
+                }
+            }
+        },
+        "wind": {
+            "model": "wind",
+            "connections": {
+                "aerodynamicPort": {
+                    "con_model": "windTurbine",
+                    "con_port": "aerodynamicPort"
+                }
+            }
+        }
+    }
+}

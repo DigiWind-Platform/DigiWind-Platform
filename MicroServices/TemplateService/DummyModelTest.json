@@ -1,0 +1,52 @@
+{
+    "models": [
+        {
+            "name": "IntegratorFMU",
+            "type": "PublicGridFMU",
+            "connections": [
+                {
+                    "srcPortName": "electricalPort",
+                    "destModelName": "SinusFMU",
+                    "destPortName": "electricalPort"
+                }
+            ],
+            "inputs": []
+        },
+        {
+            "name": "SinusFMU",
+            "type": "WindTurbineFMU",
+            "connections": [
+                {
+                    "srcPortName": "electricalPort",
+                    "destModelName": "IntegratorFMU",
+                    "destPortName": "electricalPort"
+                },
+                {
+                    "srcPortName": "aerodynamicPort",
+                    "destModelName": "testInput",
+                    "destPortName": "aerodynamicPort"
+                }
+            ],
+            "inputs": []
+        },
+        {
+            "name": "testInput",
+            "type": "WindModelFMU",
+            "connections": [
+                {
+                    "srcPortName": "aerodynamicPort",
+                    "destModelName": "SinusFMU",
+                    "destPortName": "aerodynamicPort"
+                }
+            ],
+            "inputs": [
+                "windSpeed"
+            ]
+        }
+    ],
+    "simulationConfiguration": {
+        "timeStepSize": 0.01,
+        "startDate": "2022-10-01T00:00:00Z",
+        "endDate": "2022-10-01T00:20:00Z"
+    }
+}

@@ -1,0 +1,18 @@
+# syntax=docker/dockerfile:1
+
+FROM python:3.10-slim-buster
+# use a working directory which enables to use the relative path
+WORKDIR /app
+
+COPY requirements.txt requirements.txt
+
+RUN pip install -r requirements.txt
+
+COPY model_management_service.py model_management_service.py
+COPY utils.py utils.py
+COPY graph_helper.py graph_helper.py
+COPY ftp_class.py ftp_class.py
+COPY triple_store_interface.py triple_store_interface.py
+ENV PYTHONUNBUFFERED 1
+#EXPOSE 2121 60000-60035
+ENTRYPOINT ["python", "model_management_service.py", "--host=0.0.0.0"]

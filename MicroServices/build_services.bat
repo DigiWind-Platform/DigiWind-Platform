@@ -1,0 +1,15 @@
+cd ModelAssemblyService
+call "build_cmd.bat"
+cd ..
+cd ModelManagementService
+call "build_cmd.bat"
+cd ..
+cd CoSimulationService
+call "build_cmd.bat"
+cd ..
+cd MeasurementDataService
+call "build_cmd.bat"
+cd ..
+cd TempalteService
+call "build_cmd.bat"
+cd ..

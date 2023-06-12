@@ -1,0 +1,17 @@
+# syntax=docker/dockerfile:1
+
+FROM tobix/pywine:3.9
+
+WORKDIR /app
+
+COPY requirements.txt requirements.txt
+
+RUN wine pip install --upgrade pip setuptools wheel --user
+RUN wine pip install -r requirements.txt
+
+COPY coSimulationService.py coSimulationService.py
+COPY ssdToolbox.py ssdToolbox.py
+
+ENV PYTHONUNBUFFERED 1
+
+ENTRYPOINT ["wine", "python", "coSimulationService.py"]

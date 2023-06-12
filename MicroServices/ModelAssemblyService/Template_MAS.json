@@ -1,0 +1,69 @@
+{
+    "models": {
+        "generator": {
+            "model": "generator",
+            "connections": {
+                "electricalPort": {
+                    "con_model": "grid",
+                    "con_port": "electricalPort"
+                },
+                "mechanicalPort": {
+                    "con_model": "windTurbine",
+                    "con_port": "mechanicalPort"
+                },
+                "controllerConnection": {
+                    "con_model": "windTurbineController",
+                    "con_port": "controllerConnectionGenerator"
+                }
+            }
+        },
+        "windTurbine": {
+            "model": "windTurbine",
+            "connections": {
+                "aerodynamicPort": {
+                    "con_model": "wind",
+                    "con_port": "aerodynamicPort"
+                },
+                "mechanicalPort": {
+                    "con_model": "generator",
+                    "con_port": "mechanicalPort"
+                },
+                "controllerConnection": {
+                    "con_model": "windTurbineController",
+                    "con_port": "controllerConnectionTurbine"
+                }
+            }
+        },
+        "windTurbineController": {
+            "model": "windTurbine",
+            "connections": {
+                "controllerConnectionGenerator": {
+                    "con_model": "generator",
+                    "con_port": "controllerConnection"
+                },
+                "controllerConnectionTurbine": {
+                    "con_model": "windTurbine",
+                    "con_port": "controllerConnection"
+                }
+            }
+        },
+        "wind": {
+            "model": "wind",
+            "connections": {
+                "aerodynamicPort": {
+                    "con_model": "windTurbine",
+                    "con_port": "aerodynamicPort"
+                }
+            }
+        },
+        "grid": {
+            "model": "grid",
+            "connections": {
+                "electricalPort": {
+                    "con_model": "generator",
+                    "con_port": "electricalPort"
+                }
+            }
+        }
+    }
+}
