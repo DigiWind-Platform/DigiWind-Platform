@@ -3,7 +3,9 @@ This project/repository holds code developed for the project **DigiWind**.
 
 
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8014728.svg)](https://doi.org/10.5281/zenodo.8014728)
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8070953.svg)](https://doi.org/10.5281/zenodo.8070953)
+
 
 
 
