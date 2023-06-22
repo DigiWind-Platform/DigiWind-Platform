@@ -1,0 +1,1 @@
+docker build --tag measurement_data_service .

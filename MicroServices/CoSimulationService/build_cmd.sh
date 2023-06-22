@@ -1,0 +1,1 @@
+docker build --tag co_simulation_service .

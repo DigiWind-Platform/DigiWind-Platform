@@ -1,0 +1,1 @@
+docker build --tag model_management_service .

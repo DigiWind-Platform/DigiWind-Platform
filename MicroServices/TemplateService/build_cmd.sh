@@ -1,0 +1,1 @@
+docker build --tag template_service .
